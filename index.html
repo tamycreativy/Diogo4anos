@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O Caso do Aniversário</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Prévia ao compartilhar no WhatsApp/redes sociais -->
+<meta property="og:title" content="Missão: O Caso do Aniversário">
+<meta property="og:description" content="Um mistério pra resolver antes de descobrir o convite! Confira.">
+<meta property="og:image" content="https://tamycreativy.github.io/Diogo4anos/zapdiogo.PNG">
+<meta property="og:url" content="https://tamycreativy.github.io/Diogo4anos/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+        background: #000;
+        overflow: hidden;
+        height: 100vh;
+        font-family: 'Kalam', cursive;
+        color: #fff;
+    }
+    .full-screen {
+        display: none;
+        position: fixed; inset: 0;
+        width: 100vw; height: 100vh;
+    }
+    .full-screen.active { display: flex; }
+    
+    .title-font { font-family: 'Bangers', cursive; letter-spacing: 1px; }
+
+    .action-btn {
+        background: #ff9800;
+        color: #1a1a1a;
+        border: 3px solid #1a1a1a;
+        font-family: 'Bangers', cursive;
+        font-size: 20px;
+        letter-spacing: 1px;
+        padding: 14px 30px;
+        border-radius: 40px;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #1a1a1a;
+    }
+    .action-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1a1a1a; }
+
+    /* ====== VÍDEOS ====== */
+    .video-screen video {
+        width: 100%; height: 100%;
+        object-fit: contain;
+        background: #000;
+    }
+    .skip-btn {
+        position: absolute;
+        bottom: max(4%, 18px);
+        right: max(4%, 18px);
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.7);
+        color: #fff;
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        z-index: 99999;
+    }
+
+    /* ====== 1) CENA DA LUPA ====== */
+    #screen-lupa {
+        background: #000;
+        justify-content: center;
+        align-items: center;
+    }
+    #lupa-wrap {
+        position: relative;
+        width: 100%; height: 100%;
+        touch-action: none;
+        overflow: hidden;
+        background: #000;
+    }
+    
+    #lupa-hidden-img {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+        z-index: 2;
+        clip-path: circle(0px at 50% 50%);
+        transition: clip-path 0.05s ease-out;
+    }
+    
+    #lupa-hidden-img.revealed {
+        clip-path: circle(150% at 50% 50%) !important;
+        transition: clip-path 0.9s ease;
+    }
+
+    #lupa-glass {
+        position: absolute;
+        width: 150px;
+        left: 50%;
+        top: 42%;
+        transform: translate(-50%, -50%);
+        z-index: 6;
+        pointer-events: none;
+    }
+
+    #lupa-hud {
+        position: absolute;
+        top: 8%; left: 0; width: 100%;
+        z-index: 7;
+        text-align: center;
+        padding: 0 24px;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+    }
+    #lupa-hud.hidden { opacity: 0; }
+    #lupa-hud h2 {
+        font-family: 'Bangers', cursive;
+        font-size: 26px;
+        letter-spacing: 1px;
+        color: #ffb347;
+        text-shadow:
+            0 0 10px rgba(255, 179, 71, 0.7),
+            2px 2px 0 #3a1a5c,
+            -2px -2px 0 #3a1a5c,
+            2px -2px 0 #3a1a5c,
+            -2px 2px 0 #3a1a5c;
+    }
+
+    #lupa-bottom-text {
+        position: absolute;
+        bottom: 4%; left: 0; width: 100%;
+        z-index: 7;
+        text-align: center;
+        padding: 0 24px;
+        opacity: 0;
+        transition: opacity 0.6s ease 0.4s;
+        pointer-events: none;
+    }
+    #lupa-bottom-text span {
+        display: inline-block;
+        background: rgba(46, 125, 50, 0.75);
+        color: #fff;
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 10px 18px;
+        border-radius: 14px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+    }
+    #lupa-bottom-text.show { opacity: 1; }
+
+    /* ====== AS 3 PORTAS CLICÁVEIS ====== */
+    .door-hotspot {
+        position: absolute;
+        z-index: 5;
+        pointer-events: none;
+        /* background: rgba(255,0,0,0.3); */
+    }
+    .door-hotspot.active { pointer-events: auto; cursor: pointer; }
+
+    /* ====== MENSAGENS DE SUSTO (aparecem por cima do último frame do vídeo) ====== */
+    .scare-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        text-align: center;
+        padding: 30px 24px;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, transparent 75%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+    }
+    .scare-overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .scare-overlay .scare-text {
+        font-family: 'Bangers', cursive;
+        font-size: 28px;
+        color: #ff5555;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        margin-bottom: 26px;
+        line-height: 1.4;
+    }
+
+    /* ====== BOTÃO DISCRETO DE PULAR (na abertura) ====== */
+    #skip-intro-btn {
+        position: absolute;
+        top: max(4%, 18px);
+        right: max(4%, 18px);
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.7);
+        color: #fff;
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        z-index: 99999;
+    }
+
+    /* ====== BOTÃO DISCRETO DE VOLTAR (modal de dicas) ====== */
+    .modal-back-btn {
+        position: absolute;
+        top: 20px; left: 20px;
+        background: rgba(20, 20, 24, 0.75);
+        border: 1px solid rgba(255,255,255,0.8);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        z-index: 310;
+    }
+
+    /* ====== TRANSIÇÃO "CASO RESOLVIDO" ====== */
+    #resolved-screen {
+        background: #1a0f00;
+        justify-content: center;
+        align-items: center;
+    }
+    #resolved-screen .overlay-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 100%;
+    }
+    #resolved-screen h1 {
+        font-family: 'Bangers', cursive;
+        font-size: 34px;
+        color: #ffd76b;
+        text-shadow: 3px 3px 0 rgba(0,0,0,0.6);
+    }
+    .confetti {
+        position: absolute;
+        top: -10%;
+        font-size: 22px;
+        animation: confettiFall linear infinite;
+        z-index: 1;
+    }
+    @keyframes confettiFall {
+        to { transform: translateY(115vh) rotate(360deg); }
+    }
+
+    /* ====== 8) PÁGINA PRINCIPAL ====== */
+    #main-info {
+        display: none;
+        position: relative;
+        width: 100%;
+        background: #000;
+    }
+    #main-info.active { display: block; }
+    #main-info-photo { width: 100%; display: block; }
+    .info-hotspot {
+        position: absolute;
+        width: 26%;
+        height: 8%;
+        cursor: pointer;
+        /* background: rgba(255,0,0,0.25); */
+    }
+    #hs-local      { left: 39%; top: 78%; height: 17%; }
+    #hs-confirmar  { left: 7%;  top: 78%; height: 17%; }
+    #hs-dicas      { left: 71%; top: 78%; height: 17%; }
+
+    /* ====== MODAL DE DICAS DE PRESENTE ====== */
+    .modal-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 300;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-overlay img { max-width: 100%; max-height: 85vh; border-radius: 12px; }
+    .modal-close {
+        position: absolute;
+        top: 20px; right: 20px;
+        background: #ff9800;
+        color: #1a1a1a;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        width: 40px; height: 40px;
+        font-size: 20px; font-weight: bold;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 310;
+    }
+</style>
+</head>
+<body>
+
+    <!-- ====== ÁUDIO DE FUNDO (toca a partir da página de informações) ====== -->
+    <audio id="bg-music" src="musica.diogo.mp3" preload="auto" loop></audio>
+
+    <!-- ====== 1) ABERTURA: A LUPA + PORTAS ====== -->
+    <div class="full-screen active" id="screen-lupa">
+        <button id="skip-intro-btn" onclick="skipToInfo()">Pular ›</button>
+        <div id="lupa-wrap">
+            <img id="lupa-hidden-img" src="fundo.png" alt="Portas escondidas">
+            <img id="lupa-glass" src="lupa.png" alt="Lupa">
+
+            <div id="door-trigger-zone" style="position: absolute; left:6%; top:25%; width:29%; height:20%; z-index:3; pointer-events:none;"></div>
+
+            <div class="door-hotspot" id="door-1" style="left:6%; top:25%; width:29%; height:20%;" data-correct="true"></div>
+            <div class="door-hotspot" id="door-2" style="left:38%; top:24%; width:24%; height:22%;" data-correct="false"></div>
+            <div class="door-hotspot" id="door-3" style="left:66%; top:25%; width:29%; height:20%;" data-correct="false"></div>
+
+            <div id="lupa-hud">
+                <h2>Use a lupa para<br>encontrar pistas.</h2>
+            </div>
+
+            <div id="lupa-bottom-text"><span>Pra onde o Scooby foi?<br>Cuidado para não entrar na porta errada.</span></div>
+        </div>
+    </div>
+
+    <!-- ====== VÍDEO: PORTA DO FANTASMA (errada) ====== -->
+    <div class="full-screen video-screen" id="screen-video-fantasma">
+        <video id="video-fantasma" playsinline webkit-playsinline preload="auto">
+            <source src="portafantasma.mp4" type="video/mp4">
+        </video>
+        <div class="scare-overlay" id="scare-fantasma">
+            <div class="scare-text">Ruh-roh! 😱👻<br>Você caiu em uma<br>armadilha!</div>
+            <div class="action-btn" onclick="closeScareAndRetry('scare-fantasma')">🔎 TENTAR NOVAMENTE</div>
+        </div>
+    </div>
+
+    <!-- ====== VÍDEO: PORTA DO MONSTRO (errada) ====== -->
+    <div class="full-screen video-screen" id="screen-video-monstro">
+        <video id="video-monstro" playsinline webkit-playsinline preload="auto">
+            <source src="portamonstro.mp4" type="video/mp4">
+        </video>
+        <div class="scare-overlay" id="scare-monstro">
+            <div class="scare-text">OOOOPS! 👹💥<br>Essa também não é a<br>pista do Scooby!</div>
+            <div class="action-btn" onclick="closeScareAndRetry('scare-monstro')">VOLTAR ÀS PORTAS</div>
+        </div>
+    </div>
+
+    <!-- ====== VÍDEO: PORTA CERTA (Diogo) ====== -->
+    <div class="full-screen video-screen" id="screen-video-porta-certa">
+        <video id="video-porta-certa" playsinline webkit-playsinline preload="auto">
+            <source src="portadiogo.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <!-- ====== 7) TRANSIÇÃO "CASO RESOLVIDO" ====== -->
+    <div class="full-screen" id="resolved-screen">
+        <div class="overlay-content">
+            <h1>CASO RESOLVIDO!<br>🔎🐾</h1>
+        </div>
+    </div>
+
+    <!-- ====== 8) PÁGINA PRINCIPAL ====== -->
+    <div id="main-info">
+        <img id="main-info-photo" src="infodiogo.png" alt="Informações da festa">
+        <div class="info-hotspot" id="hs-local" onclick="openMaps()" title="Ver localização"></div>
+        <div class="info-hotspot" id="hs-confirmar" onclick="openWhatsApp()" title="Confirmar presença"></div>
+        <div class="info-hotspot" id="hs-dicas" onclick="openModal('gift-modal')" title="Dicas de presente"></div>
+    </div>
+
+    <!-- ====== MODAL: DICAS DE PRESENTE ====== -->
+    <div class="modal-overlay" id="gift-modal">
+        <button class="modal-back-btn" onclick="closeModal('gift-modal')">← Voltar</button>
+        <img src="presentesdiogo.png" alt="Dicas de Presente">
+    </div>
+
+    <script>
+        function goTo(screenId) {
+            document.querySelectorAll('.full-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function playVideoScreen(screenId, videoId, onEndCallback) {
+            goTo(screenId);
+            const video = document.getElementById(videoId);
+            video.currentTime = 0;
+            video.play().catch(e => console.log('Play automático bloqueado:', e));
+            video.onended = onEndCallback;
+        }
+
+        // ====== LUPA ======
+        const lupaWrap = document.getElementById('lupa-wrap');
+        const lupaImg = document.getElementById('lupa-hidden-img');
+        const lupaGlass = document.getElementById('lupa-glass');
+        const triggerZone = document.getElementById('door-trigger-zone');
+        const LUPA_RADIUS = 85;
+        let revealed = false;
+
+        const LUPA_IMG_WIDTH = 150;
+        const LUPA_IMG_HEIGHT = 150; 
+        const LUPA_GLASS_CENTER_X_PCT = 0.50;
+        const LUPA_GLASS_CENTER_Y_PCT = 0.40;
+
+        function moveLupa(x, y) {
+            if (revealed) return;
+
+            lupaImg.style.clipPath = `circle(${LUPA_RADIUS}px at ${x}px ${y}px)`;
+            lupaGlass.style.transform = 'none';
+            lupaGlass.style.left = (x - LUPA_IMG_WIDTH * LUPA_GLASS_CENTER_X_PCT) + 'px';
+            lupaGlass.style.top = (y - LUPA_IMG_HEIGHT * LUPA_GLASS_CENTER_Y_PCT) + 'px';
+
+            const wrapRect = lupaWrap.getBoundingClientRect();
+            const tz = triggerZone.getBoundingClientRect();
+            const px = wrapRect.left + x;
+            const py = wrapRect.top + y;
+
+            if (px >= tz.left && px <= tz.right && py >= tz.top && py <= tz.bottom) {
+                revealAll();
+            }
+        }
+
+        function revealAll() {
+            revealed = true;
+            lupaImg.classList.add('revealed');
+            lupaGlass.style.display = 'none';
+            document.getElementById('lupa-hud').classList.add('hidden');
+            document.getElementById('lupa-bottom-text').classList.add('show');
+            document.querySelectorAll('.door-hotspot').forEach(d => d.classList.add('active'));
+        }
+
+        lupaWrap.addEventListener('touchmove', (e) => {
+            const rect = lupaWrap.getBoundingClientRect();
+            const touch = e.touches[0];
+            moveLupa(touch.clientX - rect.left, touch.clientY - rect.top);
+        }, { passive: true });
+
+        lupaWrap.addEventListener('touchstart', (e) => {
+            const rect = lupaWrap.getBoundingClientRect();
+            const touch = e.touches[0];
+            moveLupa(touch.clientX - rect.left, touch.clientY - rect.top);
+        }, { passive: true });
+
+        lupaWrap.addEventListener('mousemove', (e) => {
+            const rect = lupaWrap.getBoundingClientRect();
+            moveLupa(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        // ====== PORTAS ======
+        document.getElementById('door-1').addEventListener('click', function () {
+            if (!this.classList.contains('active')) return;
+            playVideoScreen('screen-video-porta-certa', 'video-porta-certa', showMainInfo);
+        });
+
+        document.getElementById('door-2').addEventListener('click', function () {
+            if (!this.classList.contains('active')) return;
+            playVideoScreen('screen-video-fantasma', 'video-fantasma', () => showScare('scare-fantasma'));
+        });
+
+        document.getElementById('door-3').addEventListener('click', function () {
+            if (!this.classList.contains('active')) return;
+            playVideoScreen('screen-video-monstro', 'video-monstro', () => showScare('scare-monstro'));
+        });
+
+        function showScare(overlayId) {
+            document.getElementById(overlayId).classList.add('show');
+        }
+
+        function closeScareAndRetry(overlayId) {
+            document.getElementById(overlayId).classList.remove('show');
+            goTo('screen-lupa'); // já está revelada e com as portas ativas
+        }
+
+        // ====== BOTÃO DE PULAR A ABERTURA INTEIRA ======
+        function skipToInfo() {
+            showMainInfo();
+        }
+
+        // ====== MOSTRAR A PÁGINA DE INFORMAÇÕES (com música) ======
+        function showMainInfo() {
+            document.querySelectorAll('.full-screen').forEach(s => s.classList.remove('active'));
+            const info = document.getElementById('main-info');
+            info.style.display = 'block';
+            info.classList.add('active');
+            document.body.style.overflow = 'auto';
+
+            // Lembra que já chegou aqui nesta aba/sessão — assim, se o
+            // celular recarregar a página ao voltar do Google Maps, ela
+            // pula direto pra cá em vez de reiniciar a investigação
+            sessionStorage.setItem('diogoInfoReached', 'true');
+
+            const music = document.getElementById('bg-music');
+            music.play().catch(e => console.log('Música bloqueada até interação:', e));
+            info.addEventListener('click', function unlockMusic() {
+                if (music.paused) music.play().catch(() => {});
+                info.removeEventListener('click', unlockMusic);
+            }, { once: true });
+        }
+
+        // Se a página recarregar (ex: voltando do Google Maps) e a pessoa já
+        // tinha chegado nas informações nesta sessão, pula direto pra lá
+        if (sessionStorage.getItem('diogoInfoReached') === 'true') {
+            showMainInfo();
+        }
+
+        // ====== TRANSIÇÃO "CASO RESOLVIDO" ======
+        function playResolvedTransition() {
+            goTo('resolved-screen');
+            spawnConfetti();
+
+            setTimeout(() => {
+                showMainInfo();
+            }, 2200);
+        }
+
+        function spawnConfetti() {
+            const emojis = ['🎉', '🎊', '⭐', '🐾'];
+            const container = document.getElementById('resolved-screen');
+            for (let i = 0; i < 24; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                c.style.left = Math.random() * 100 + '%';
+                c.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+                c.style.animationDelay = (Math.random() * 0.5) + 's';
+                container.appendChild(c);
+                setTimeout(() => c.remove(), 4000);
+            }
+        }
+
+        // ====== BOTÕES DA PÁGINA PRINCIPAL ======
+        function openWhatsApp() {
+            window.open("https://wa.me/5511963627773", "_blank", "noopener");
+        }
+        function openMaps() {
+            window.open("https://www.google.com/maps/place/R.+Emile+Verhaeren,+64+-+Vila+Maria+Alta,+S%C3%A3o+Paulo+-+SP,+02133-020/@-23.4998837,-46.5867663,17z/data=!4m6!3m5!1s0x94ce5f5110a05a85:0x5aec2cc940cff3a1!8m2!3d-23.4998837!4d-46.5867663!16s%2Fg%2F11crsqpynz", "_blank", "noopener");
+        }
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+    </script>
+</body>
+</html>
+
