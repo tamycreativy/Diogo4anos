@@ -51,7 +51,7 @@
     /* ====== VÍDEOS ====== */
     .video-screen video {
         width: 100%; height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         background: #000;
     }
     .skip-btn {
@@ -74,18 +74,30 @@
         justify-content: center;
         align-items: center;
     }
+    #screen-lupa { overflow: hidden; position: fixed; }
+    #screen-lupa::before {
+        content: ""; position: absolute; inset: -30px;
+        background: url(fundo.png) center/cover; filter: blur(22px) brightness(.55);
+        opacity: 0; transition: opacity .6s ease;
+    }
+    #screen-lupa.revealed::before { opacity: 1; }
+    /* palco com a proporção da imagem (941x1672): cobre a tela com no máx. ~12% de corte,
+       assim as portas clicáveis ficam sempre alinhadas com a imagem (celular, tablet e PC) */
     #lupa-wrap {
-        position: relative;
-        width: 100%; height: 100%;
+        position: absolute;
+        left: 50%; top: 50%;
+        height: min(max(100vh, 177.7vw), 112vh);
+        height: min(max(100dvh, 177.7vw), 112dvh);
+        aspect-ratio: 941 / 1672;
+        transform: translate(-50%, -50%);
         touch-action: none;
-        overflow: hidden;
         background: #000;
     }
     
     #lupa-hidden-img {
         position: absolute; inset: 0;
         width: 100%; height: 100%;
-        object-fit: cover;
+        object-fit: fill;
         z-index: 2;
         clip-path: circle(0px at 50% 50%);
         transition: clip-path 0.05s ease-out;
@@ -259,7 +271,23 @@
         background: #000;
     }
     #main-info.active { display: block; }
+    .infobox { position: relative; width: 100%; }
     #main-info-photo { width: 100%; display: block; }
+    #main-info::before { content: none; }
+    /* Tablet / PC (tela mais "larga" que o celular): a página ocupa a tela inteira,
+       sem precisar rolar, com a imagem centralizada e as laterais preenchidas por um desfoque dela */
+    @media (min-aspect-ratio: 5/8) {
+        #main-info.active {
+            position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        #main-info.active::before {
+            content: ""; position: absolute; inset: -30px;
+            background: url(infodiogo.png) center/cover; filter: blur(24px) brightness(.55);
+        }
+        .infobox { width: auto; height: 105vh; height: 105dvh; aspect-ratio: 1080 / 1920; flex: none; }
+        #main-info-photo { width: 100%; height: 100%; }
+    }
     .info-hotspot {
         position: absolute;
         width: 26%;
@@ -316,12 +344,12 @@
             <div class="door-hotspot" id="door-2" style="left:38%; top:24%; width:24%; height:22%;" data-correct="false"></div>
             <div class="door-hotspot" id="door-3" style="left:66%; top:25%; width:29%; height:20%;" data-correct="false"></div>
 
-            <div id="lupa-hud">
-                <h2>Use a lupa para<br>encontrar pistas.</h2>
-            </div>
-
-            <div id="lupa-bottom-text"><span>Pra onde o Scooby foi?<br>Cuidado para não entrar na porta errada.</span></div>
         </div>
+        <div id="lupa-hud">
+            <h2>Use a lupa para<br>encontrar pistas.</h2>
+        </div>
+
+        <div id="lupa-bottom-text"><span>Pra onde o Scooby foi?<br>Cuidado para não entrar na porta errada.</span></div>
     </div>
 
     <!-- ====== VÍDEO: PORTA DO FANTASMA (errada) ====== -->
@@ -362,10 +390,12 @@
 
     <!-- ====== 8) PÁGINA PRINCIPAL ====== -->
     <div id="main-info">
+        <div class="infobox">
         <img id="main-info-photo" src="infodiogo.png" alt="Informações da festa">
         <div class="info-hotspot" id="hs-local" onclick="openMaps()" title="Ver localização"></div>
         <div class="info-hotspot" id="hs-confirmar" onclick="openWhatsApp()" title="Confirmar presença"></div>
         <div class="info-hotspot" id="hs-dicas" onclick="openModal('gift-modal')" title="Dicas de presente"></div>
+        </div>
     </div>
 
     <!-- ====== MODAL: DICAS DE PRESENTE ====== -->
@@ -390,6 +420,7 @@
 
         // ====== LUPA ======
         const lupaWrap = document.getElementById('lupa-wrap');
+        const lupaScreen = document.getElementById('screen-lupa');
         const lupaImg = document.getElementById('lupa-hidden-img');
         const lupaGlass = document.getElementById('lupa-glass');
         const triggerZone = document.getElementById('door-trigger-zone');
@@ -422,25 +453,26 @@
         function revealAll() {
             revealed = true;
             lupaImg.classList.add('revealed');
+            document.getElementById('screen-lupa').classList.add('revealed');
             lupaGlass.style.display = 'none';
             document.getElementById('lupa-hud').classList.add('hidden');
             document.getElementById('lupa-bottom-text').classList.add('show');
             document.querySelectorAll('.door-hotspot').forEach(d => d.classList.add('active'));
         }
 
-        lupaWrap.addEventListener('touchmove', (e) => {
+        lupaScreen.addEventListener('touchmove', (e) => {
             const rect = lupaWrap.getBoundingClientRect();
             const touch = e.touches[0];
             moveLupa(touch.clientX - rect.left, touch.clientY - rect.top);
         }, { passive: true });
 
-        lupaWrap.addEventListener('touchstart', (e) => {
+        lupaScreen.addEventListener('touchstart', (e) => {
             const rect = lupaWrap.getBoundingClientRect();
             const touch = e.touches[0];
             moveLupa(touch.clientX - rect.left, touch.clientY - rect.top);
         }, { passive: true });
 
-        lupaWrap.addEventListener('mousemove', (e) => {
+        lupaScreen.addEventListener('mousemove', (e) => {
             const rect = lupaWrap.getBoundingClientRect();
             moveLupa(e.clientX - rect.left, e.clientY - rect.top);
         });
@@ -479,7 +511,7 @@
         function showMainInfo() {
             document.querySelectorAll('.full-screen').forEach(s => s.classList.remove('active'));
             const info = document.getElementById('main-info');
-            info.style.display = 'block';
+            info.style.display = '';
             info.classList.add('active');
             document.body.style.overflow = 'auto';
 
